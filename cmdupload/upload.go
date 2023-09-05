@@ -7,12 +7,13 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"immich-go/fshelper"
+	"immich-go/host/multifs"
 	"immich-go/immich"
 	"immich-go/immich/assets"
 	"immich-go/immich/logger"
 	"immich-go/immich/metadata"
 	"io/fs"
+
 	"math"
 	"path"
 	"path/filepath"
@@ -90,7 +91,8 @@ func UploadCommand(ctx context.Context, ic *immich.ImmichClient, log *logger.Log
 
 	}
 
-	fsys, err := fshelper.OpenMultiFile(app.Paths...)
+	fsys, err := multifs.OpenMultiFile(app.Paths...)
+
 	if err != nil {
 		return err
 	}

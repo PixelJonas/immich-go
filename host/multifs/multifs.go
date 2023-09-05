@@ -1,7 +1,8 @@
-package fshelper
+package multifs
 
 import (
 	"archive/zip"
+	"immich-go/host/local"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -27,7 +28,7 @@ func OpenMultiFile(names ...string) (fs.FS, error) {
 			}
 			fss = append(fss, fsys)
 		default:
-			fsys := DirRemoveFS(p)
+			fsys, _ := local.FS(p)
 			fss = append(fss, fsys)
 		}
 	}

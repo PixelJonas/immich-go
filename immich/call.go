@@ -140,7 +140,7 @@ func get(url string, opts ...serverRequestOption) requestFunction {
 		if sc.err != nil {
 			return nil
 		}
-		return sc.request(http.MethodGet, sc.ic.endPoint+url, opts...)
+		return sc.request(http.MethodGet, sc.ic.EndPoint+url, opts...)
 	}
 }
 func post(url string, ctype string, opts ...serverRequestOption) requestFunction {
@@ -148,7 +148,7 @@ func post(url string, ctype string, opts ...serverRequestOption) requestFunction
 		if sc.err != nil {
 			return nil
 		}
-		return sc.request(http.MethodPost, sc.ic.endPoint+url, append(opts, setContentType(ctype))...)
+		return sc.request(http.MethodPost, sc.ic.EndPoint+url, append(opts, setContentType(ctype))...)
 	}
 }
 
@@ -157,7 +157,7 @@ func delete(url string, opts ...serverRequestOption) requestFunction {
 		if sc.err != nil {
 			return nil
 		}
-		return sc.request(http.MethodDelete, sc.ic.endPoint+url, opts...)
+		return sc.request(http.MethodDelete, sc.ic.EndPoint+url, opts...)
 	}
 }
 
@@ -166,7 +166,7 @@ func put(url string, opts ...serverRequestOption) requestFunction {
 		if sc.err != nil {
 			return nil
 		}
-		return sc.request(http.MethodPut, sc.ic.endPoint+url, opts...)
+		return sc.request(http.MethodPut, sc.ic.EndPoint+url, opts...)
 	}
 }
 

@@ -15,7 +15,7 @@ Immich API documentation https://documentation.immich.app/docs/api/introduction
 
 type ImmichClient struct {
 	client       *http.Client
-	endPoint     string        // Server API url
+	EndPoint     string        // Server API url
 	key          string        // User KEY
 	DeviceUUID   string        // Device
 	Retries      int           // Number of attempts on 500 errors
@@ -26,7 +26,7 @@ type ImmichClient struct {
 // Create a new ImmichClient
 func NewImmichClient(endPoint, key, deviceUUID string, apiTrace bool) (*ImmichClient, error) {
 	ic := ImmichClient{
-		endPoint:     endPoint + "/api",
+		EndPoint:     endPoint + "/api",
 		key:          key,
 		client:       &http.Client{},
 		DeviceUUID:   deviceUUID,

@@ -3,8 +3,9 @@ package cmdmetadata
 import (
 	"context"
 	"flag"
+	"immich-go/host"
+	"immich-go/host/host_if"
 	"immich-go/immich"
-	"immich-go/immich/docker"
 	"immich-go/immich/logger"
 	"immich-go/immich/metadata"
 	"math"
@@ -14,12 +15,13 @@ import (
 )
 
 type MetadataCmd struct {
-	Immich                 *immich.ImmichClient // Immich client
-	Log                    *logger.Logger
-	DryRun                 bool
-	MissingDateDespiteName bool
-	MissingDate            bool
-	DockerHost             string
+	Immich         *immich.ImmichClient // Immich client
+	Log            *logger.Logger
+	DryRun         bool
+	UseNameAsDate  bool
+	MissingDate    bool
+	Host           string
+	HostConnection host_if.HostConnection
 }
 
 func NewMetadataCmd(ctx context.Context, ic *immich.ImmichClient, logger *logger.Logger, args []string) (*MetadataCmd, error) {
@@ -30,10 +32,10 @@ func NewMetadataCmd(ctx context.Context, ic *immich.ImmichClient, logger *logger
 		Log:    logger,
 	}
 
+	cmd.StringVar(&app.Host, "host-access", "", "Immich's direct access to the asset storage ssh://user:password@host:port, scp://user:password@host:port/path/to/the/library, smb://user:password@host:port/path/to/the/library")
 	cmd.BoolVar(&app.DryRun, "dry-run", true, "display actions, but don't touch the server assets")
 	cmd.BoolVar(&app.MissingDate, "missing-date", false, "select all assets where the date is missing")
-	cmd.BoolVar(&app.MissingDateDespiteName, "missing-date-with-name", false, "select all assets where the date is missing ut the name contains a the date")
-	cmd.StringVar(&app.DockerHost, "docker-host", "local", "Immich's docker host where to inject sidecar file as workaround for the issue #3888. 'local' for local connection, 'ssh://user:password@server' for remote host.")
+	cmd.BoolVar(&app.UseNameAsDate, "use-name-as-date", false, "select check assets against their filename, and update the immich date when needed")
 	err = cmd.Parse(args)
 	return &app, err
 }
@@ -44,15 +46,16 @@ func MetadataCommand(ctx context.Context, ic *immich.ImmichClient, log *logger.L
 		return err
 	}
 
+	app.HostConnection, err = host.Open(ctx, app.Host)
+
 	var dockerConn *docker.DockerConnect
 
-	if !app.DryRun {
-		dockerConn, err = docker.NewDockerConnection(ctx, app.DockerHost, "immich_server")
-		if err != nil {
-			return err
-		}
-		app.Log.OK("Connected to the immich's docker container at %q", app.DockerHost)
+	dockerConn, err = docker.NewDockerConnection(ctx, app.HostConnection, "immich_server")
+	if err != nil {
+		return err
 	}
+
+	app.Log.OK("Connected to the immich's docker container at %q", app.HostConnection)
 
 	app.Log.MessageContinue(logger.OK, "Get server's assets...")
 	list, err := app.Immich.GetAllAssets(ctx, nil)
@@ -80,7 +83,7 @@ func MetadataCommand(ctx context.Context, ic *immich.ImmichClient, log *logger.L
 			ba.reason = append(ba.reason, "capture date invalid")
 		}
 
-		if app.MissingDateDespiteName {
+		if app.UseNameAsDate {
 			dt := metadata.TakeTimeFromName(path.Base(a.OriginalPath))
 			if !dt.IsZero() {
 				if a.ExifInfo.DateTimeOriginal.IsZero() || (math.Abs(float64(dt.Sub(a.ExifInfo.DateTimeOriginal))) > float64(24.0*time.Hour)) {
@@ -135,7 +138,6 @@ func MetadataCommand(ctx context.Context, ic *immich.ImmichClient, log *logger.L
 			continue
 		}
 		a := b.a
-		app.Log.MessageContinue(logger.OK, "Uploading sidecar for %s... ", a.OriginalPath)
 		scContent, err := b.SideCar.Bytes()
 		if err != nil {
 			return err
@@ -144,7 +146,26 @@ func MetadataCommand(ctx context.Context, ic *immich.ImmichClient, log *logger.L
 		if err != nil {
 			return err
 		}
-		app.Log.MessageTerminate(logger.OK, "done")
+		app.Log.OK("Uploaded sidecar for %s... ", a.OriginalPath)
 	}
-	return nil
+
+	err = app.SidecarSync(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = app.SidecarDiscover(ctx)
+	return err
+}
+
+func (app *MetadataCmd) SidecarSync(ctx context.Context) error {
+	app.Log.MessageContinue(logger.OK, "Start SidecarSync job....")
+	defer app.Log.MessageTerminate(logger.OK, "terminated")
+	return app.Immich.StartAndWaitJob(ctx, immich.JobSidecar, immich.CmdStart, true)
+}
+
+func (app *MetadataCmd) SidecarDiscover(ctx context.Context) error {
+	app.Log.MessageContinue(logger.OK, "Start SidecarDiscover job....")
+	defer app.Log.MessageTerminate(logger.OK, "terminated")
+	return app.Immich.StartAndWaitJob(ctx, immich.JobSidecar, immich.CmdStart, false)
 }

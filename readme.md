@@ -119,6 +119,61 @@ NOTE: You should disable the dry run mode explicitly.
 ./immich-go -server=http://mynas:2283 -key=zzV6k65KGLNB9mpGeri9n8Jk1VaNGHSCdoH1dY8jQ duplicate -dry-run=false
 ```
 
+## Command `metadata`
+
+When immich uploads a photo, it determines its date of capture using the exif data. When exif data is missing, immich takes the file creation date.
+The creation date isn't relevant when images are been copied from machines to machines during 20 years
+
+We have lot of of old images without exif data because of
+- privacy settings of the smartphone
+- WhatsApp or equivalent import
+- very old files
+- scanned photos
+- ...
+
+
+Hopefully, many digital cameras and smart phones are naming their image with a time stamp. Wise old foxes may have also done the same.
+The command `metadata -use-name-as-date` take advantage of this for updating  immich assets's date of capture against their file name. 
+
+The name must contains this order:
+- 4 digits for the year
+- 2 digits for the month
+- 2 digits for the day
+
+And optionally:
+- 2 digits for the hours (24h format)
+- 2 digits for the minutes
+- 2 digits for the secondes
+
+**Some examples**:
+
+| File name | Inferred date |
+| - |- |
+|SONY2000.09.15-18.16 copy.JPG|2000-09-15 18:16:00|
+|20180528.jpg|2018-05-28 00:00:00|
+|IMG-20210116-124300~20210404-185544.jpg | 2021-01-16 12:43:00 |
+|20220825_195258_B84CDE8D.jpg| 2022-08-25 19:52:58|
+|IMG-20161015-WA0003.jpg|2016-10-15 00:00:00|
+|ba26bb63-79df-43c6-9b71-2d03bc320dbb~20210917-120843.jpg|2021-09-17 12:08:43|
+|996~20190317-161129.jpg|2019-03-17 16:11:29|
+|2012-07-23 21.58.25.jpg|2012-07-23 21:58:12|
+
+
+The current Immich version (1.76) doesn't provide any way to update asset's information. [The documentation says](https://immich.app/docs/features/xmp-sidecars):
+
+> ... Immich will automatically detect XMP sidecar files as files that exist next to the original media file and have the exact same name with an additional .xmp file extension...<br>
+> ... This is a great use case when third-party applications are used to modify the metadata of media. 
+
+Hum... This implies to write files directly on the Immich's file system. What are options when the immich server is on the lan?
+
+### docker cp over SSH
+
+### scp 
+
+
+
+
+
 
 # Merging strategy
 
@@ -244,7 +299,12 @@ Additionally, deploying a Node.js program on user machines presents challenges.
 
 # Release notes 
 
+## Release 0.3 date taken fix using file names
 
-## Release 0.2.0
+- `metadata` command to check and fix immich metadata accuracy.
+
+
+
+## Release 0.2 duplicate cleaning
 - When uploading from a directory, use the date inferred from the file name as file date.  Immich uses it as date of take. This is useful for images without Exif data.
 - `duplicate` command check immich for several version of the same image, same file name, same date of capture

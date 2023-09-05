@@ -63,10 +63,6 @@ var sidecarTemplate = template.Must(template.New("xmp").Parse(`<x:xmpmeta xmlns:
   xmlns:exif='http://ns.adobe.com/exif/1.0/'>
   <exif:ExifVersion>0232</exif:ExifVersion>
   <exif:DateTimeOriginal>{{((.DateTaken).Local).Format "2006-01-02T15:04:05"}}</exif:DateTimeOriginal>
-  <exif:GPSAltitude>{{.Elevation}}</exif:GPSAltitude>
-  <exif:GPSLatitude>{{.Latitude}}</exif:GPSLatitude>
-  <exif:GPSLongitude>{{.Longitude}}</exif:GPSLongitude>  
-  <exif:GPSTimeStamp>{{((.DateTaken).UTC).Format "2006-01-02T15:04:05+0000"}}</exif:GPSTimeStamp>
  </rdf:Description>
 </rdf:RDF>
 </x:xmpmeta>`))
